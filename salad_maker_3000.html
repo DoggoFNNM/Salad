@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Salad Maker 3000 🥗</title>
+  <style>
+    body {
+      font-family: monospace;
+      background: #f2fff2;
+      color: #333;
+      padding: 20px;
+      text-align: center;
+    }
+    #ascii-salad {
+      font-size: 20px;
+      line-height: 1.2;
+    }
+    button {
+      margin: 10px;
+      padding: 10px;
+      background: #aaffaa;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background: #88dd88;
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    img {
+      margin-top: 15px;
+      max-width: 90%;
+      border: 2px solid #ccc;
+      border-radius: 15px;
+    }
+    #ingredient-list {
+      margin: 20px 0;
+      text-align: left;
+      display: inline-block;
+    }
+    #ingredient-list label {
+      display: block;
+      margin: 5px 0;
+      padding: 5px;
+      background: #e8f5e8;
+      border-radius: 5px;
+    }
+    #salad-result {
+      margin-top: 20px;
+    }
+    .salad-display {
+      font-size: 48px;
+      margin: 20px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 15px;
+      border: 3px solid #aaffaa;
+    }
+    .recipe {
+      text-align: left;
+      display: inline-block;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      border: 2px solid #aaffaa;
+    }
+  </style>
+</head>
+<body>
+  <h1>🥗 Welcome to the Salad Maker 3000 🥗</h1>
+
+  <pre id="ascii-salad">
+<span style="color:green">   🥬🥒🍃 </span>
+<span style="color:red"> 🍅🌶️🍓 </span>
+<span style="color:white">  (‾‾‾‾‾‾‾)</span>
+<span style="color:white">  ( Salad Bowl )</span>
+<span style="color:white">  (_________)</span>
+  </pre>
+
+  <button onclick="generateIngredients()">🎲 Generate Ingredients</button>
+  <div id="ingredient-list"></div>
+
+  <button onclick="cookSalad()" id="cook-btn">👨‍🍳 Make Your Salad</button>
+  <div id="salad-result"></div>
+
+  <script>
+    const ingredients = [
+      "🥬 Lettuce", "🍅 Tomato", "🥒 Cucumber", "🧅 Onion", 
+      "🧄 Garlic", "🥕 Carrot", "🫑 Bell Pepper", "🌽 Corn", 
+      "🫒 Olives", "🥑 Avocado", "🍄 Mushrooms", "🥦 Broccoli",
+      "🧀 Cheese", "🥜 Nuts", "🌱 Sprouts", "🍋 Lemon"
+    ];
+
+    const saladEmojis = ["🥗", "🍽️", "🌈", "✨"];
+
+    function generateIngredients() {
+      const container = document.getElementById("ingredient-list");
+      container.innerHTML = '';
+      const selected = new Set();
+      const numIngredients = Math.floor(Math.random() * 3) + 6;
+      while (selected.size < numIngredients) {
+        selected.add(ingredients[Math.floor(Math.random() * ingredients.length)]);
+      }
+      for (let item of selected) {
+        const checkbox = document.createElement('label');
+        checkbox.innerHTML = `<input type="checkbox" value="${item}"> ${item}`;
+        container.appendChild(checkbox);
+      }
+    }
+
+    function cookSalad() {
+      const selected = Array.from(document.querySelectorAll('input[type="checkbox"]:checked'))
+                            .map(cb => cb.value);
+
+      if (selected.length === 0) {
+        alert("Please select some ingredients first! 🥗");
+        return;
+      }
+
+      const cookBtn = document.getElementById("cook-btn");
+      cookBtn.disabled = true;
+      cookBtn.textContent = "🍳 Making your salad...";
+
+      document.getElementById("salad-result").innerHTML = `
+        <p>✨ Creating your perfect salad...</p>
+        <p>⏳ Generating AI image of your salad...</p>
+      `;
+
+      generateSaladImage(selected);
+    }
+
+    async function generateSaladImage(ingredientsList) {
+      const ingredientNames = ingredientsList.map(ing => ing.split(' ').slice(1).join(' '));
+      const prompt = `A beautiful, fresh, colorful salad bowl containing ${ingredientNames.join(', ')}, professional food photography, appetizing, well-lit, restaurant quality`;
+
+      try {
+        const resp = await fetch('https://api.deepai.org/api/text2img', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': '92430db0-18ce-4cd2-b2c7-2df07f652711'
+          },
+          body: JSON.stringify({ text: prompt })
+        });
+
+        const data = await resp.json();
+        console.log("Image API response:", data); // Debug log
+
+        if (data.output_url) {
+          createSaladDisplay(ingredientsList, data.output_url);
+        } else {
+          throw new Error("No image URL returned from DeepAI. Check API usage limits or prompt validity.");
+        }
+      } catch (err) {
+        console.error("Image generation failed:", err);
+        document.getElementById("salad-result").innerHTML = `
+          <p>⚠️ AI image generation failed – falling back to emoji salad.</p>
+        `;
+        createSaladDisplay(ingredientsList, null);
+      } finally {
+        document.getElementById("cook-btn").disabled = false;
+        document.getElementById("cook-btn").textContent = "👨‍🍳 Make Your Salad";
+      }
+    }
+
+    function createSaladDisplay(ingredients, imageUrl) {
+      const randomEmoji = saladEmojis[Math.floor(Math.random() * saladEmojis.length)];
+      const ingredientList = ingredients.join(", ");
+      const saladVisual = ingredients.map(ing => ing.split(' ')[0]).join('');
+      const dressings = ["🫒 Olive Oil & Vinegar", "🥗 Ranch", "🍋 Lemon Vinaigrette", "🧄 Caesar", "🥜 Balsamic"];
+      const randomDressing = dressings[Math.floor(Math.random() * dressings.length)];
+
+      document.getElementById("salad-result").innerHTML = `
+        <div class="salad-display">
+          ${randomEmoji} ${saladVisual} ${randomEmoji}
+          ${imageUrl ? `<br><img src="${imageUrl}" alt="AI-generated salad image" />` : ""}
+        </div>
+        <h3>🎉 Your Salad is Ready!</h3>
+        <div class="recipe">
+          <h4>📝 Your Custom Salad Recipe:</h4>
+          <p><strong>Ingredients:</strong> ${ingredientList}</p>
+          <p><strong>Recommended Dressing:</strong> ${randomDressing}</p>
+          <p><strong>Prep Time:</strong> 5-10 minutes</p>
+          <p><strong>Instructions:</strong></p>
+          <ol>
+            <li>Wash and chop all fresh ingredients</li>
+            <li>Mix ingredients in a large bowl</li>
+            <li>Add dressing and toss gently</li>
+            <li>Serve immediately and enjoy! 😋</li>
+          </ol>
+        </div>
+        <button onclick="startOver()" style="margin-top: 20px;">🔄 Make Another Salad</button>
+      `;
+    }
+
+    function startOver() {
+      document.getElementById("salad-result").innerHTML = '';
+      document.getElementById("ingredient-list").innerHTML = '';
+      generateIngredients();
+    }
+
+    window.onload = generateIngredients;
+  </script>
+</body>
+</html>
